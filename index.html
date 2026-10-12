@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Compressor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .dropzone {
+            border: 2px dashed #9ca3af;
+            transition: all 0.3s ease;
+        }
+        .dropzone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 3px;
+        }
+        
+        input[type=range]:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-800">
+
+    <header class="bg-white shadow-sm py-4 mb-8">
+        <div class="container mx-auto px-4 flex items-center justify-center">
+            <i class="fa-regular fa-image text-blue-500 text-3xl mr-3"></i>
+            <h1 class="text-2xl font-bold text-gray-800">Image Compressor</h1>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 max-w-4xl">
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            
+            <div id="uploadSection" class="p-8">
+                <div id="dropZone" class="dropzone rounded-xl p-12 text-center cursor-pointer flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-cloud-arrow-up text-5xl text-gray-400 mb-4"></i>
+                    <h2 class="text-xl font-semibold mb-2">Drag & Drop your image here</h2>
+                    <p class="text-gray-500 mb-6">or</p>
+                    <input type="file" id="fileInput" class="hidden" accept="image/jpeg, image/png, image/webp" />
+                    <button id="browseBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm">
+                        Browse Files
+                    </button>
+                    <p class="text-sm text-gray-400 mt-4">Supports JPG, PNG, WEBP (Max 10MB)</p>
+                </div>
+            </div>
+
+            <div id="workspaceSection" class="hidden flex flex-col md:flex-row border-t border-gray-100">
+                
+                <div class="w-full md:w-1/3 bg-gray-50 p-6 flex flex-col border-b md:border-b-0 md:border-r border-gray-100">
+                    <h3 class="text-lg font-semibold mb-4 border-b pb-2">Settings</h3>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex justify-between">
+                            Image Scale (Resize)
+                            <span id="scaleValue" class="text-blue-600 font-bold">100%</span>
+                        </label>
+                        <input type="range" id="scaleSlider" min="10" max="100" step="5" value="100" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Smaller Dimensions</span>
+                            <span>Original Dimensions</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex justify-between">
+                            Quality
+                            <span id="qualityValue" class="text-blue-600 font-bold">80%</span>
+                        </label>
+                        <input type="range" id="qualitySlider" min="0.1" max="1" step="0.05" value="0.8" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Smaller File</span>
+                            <span>Better Quality</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Output Format</label>
+                        <select id="formatSelect" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
+                            <option value="image/jpeg">JPEG</option>
+                            <option value="image/webp">WEBP</option>
+                            <option value="image/png">PNG (No Quality Loss)</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-auto space-y-3">
+                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600">Original Size:</span>
+                                <span id="originalSizeDisplay" class="font-medium">0 KB</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">New Size:</span>
+                                <span id="newSizeDisplay" class="font-bold text-green-600">0 KB</span>
+                            </div>
+                            <div class="flex justify-between text-sm mt-2 pt-2 border-t border-blue-200">
+                                <span class="text-gray-600">Reduction:</span>
+                                <span id="reductionDisplay" class="font-medium text-blue-600">0%</span>
+                            </div>
+                        </div>
+                        
+                        <button id="downloadBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors shadow-md flex items-center justify-center">
+                            <i class="fa-solid fa-download mr-2"></i> Download Image
+                        </button>
+                        <button id="resetBtn" class="w-full bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-medium py-2 px-4 rounded-lg transition-colors">
+                            Compress Another
+                        </button>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-2/3 p-6 flex flex-col items-center justify-center bg-gray-100 min-h-[400px] relative">
+                    <div id="loadingOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm hidden flex items-center justify-center z-10">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                    </div>
+                    
+                    <div class="w-full max-w-full flex-grow flex items-center justify-center bg-white rounded-lg border border-gray-200 p-2 shadow-inner overflow-hidden relative">
+                        <!-- Canvas used for compression and preview -->
+                        <canvas id="previewCanvas" class="max-w-full max-h-[500px] object-contain shadow-sm"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="text-center py-6 text-gray-500 text-sm mt-auto">
+        <p>All processing is done locally in your browser. Your images are never uploaded to a server.</p>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const browseBtn = document.getElementById('browseBtn');
+            const uploadSection = document.getElementById('uploadSection');
+            const workspaceSection = document.getElementById('workspaceSection');
+            
+            const qualitySlider = document.getElementById('qualitySlider');
+            const qualityValue = document.getElementById('qualityValue');
+            const scaleSlider = document.getElementById('scaleSlider');
+            const scaleValue = document.getElementById('scaleValue');
+            const formatSelect = document.getElementById('formatSelect');
+            
+            const originalSizeDisplay = document.getElementById('originalSizeDisplay');
+            const newSizeDisplay = document.getElementById('newSizeDisplay');
+            const reductionDisplay = document.getElementById('reductionDisplay');
+            
+            const previewCanvas = document.getElementById('previewCanvas');
+            const ctx = previewCanvas.getContext('2d');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            const downloadBtn = document.getElementById('downloadBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            // State variables
+            let originalImage = null;
+            let originalFile = null;
+            let currentBlob = null;
+            let isCompressing = false;
+            let compressionTimeout = null;
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('dragover');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', handleDrop, false);
+            browseBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    processFile(files[0]);
+                }
+            }
+
+            function handleFileSelect(e) {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            }
+
+            function processFile(file) {
+                if (!file.type.match('image.*')) {
+                    showToast("Please upload an image file (JPG, PNG, WEBP).", true);
+                    return;
+                }
+
+                // Max size check (e.g., 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast("File is too large. Max size is 10MB.", true);
+                    return;
+                }
+
+                originalFile = file;
+                originalSizeDisplay.textContent = formatBytes(file.size);
+                
+                // Set default format based on input
+                if (file.type === 'image/png') {
+                    formatSelect.value = 'image/png';
+                } else if (file.type === 'image/webp') {
+                    formatSelect.value = 'image/webp';
+                } else {
+                    formatSelect.value = 'image/jpeg';
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalImage = new Image();
+                    originalImage.onload = () => {
+                        // Switch UI
+                        uploadSection.classList.add('hidden');
+                        workspaceSection.classList.remove('hidden');
+                        workspaceSection.classList.add('flex'); // restore flex layout
+                        
+                        // Initial compression
+                        compressImage();
+                    };
+                    originalImage.onerror = () => {
+                        showToast("Error loading image.", true);
+                    }
+                    originalImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function compressImage() {
+                if (!originalImage || isCompressing) return;
+                
+                isCompressing = true;
+                loadingOverlay.classList.remove('hidden');
+
+                // Small delay to allow UI to show loading state before heavy lifting
+                setTimeout(() => {
+                    const quality = parseFloat(qualitySlider.value);
+                    const scale = parseInt(scaleSlider.value) / 100;
+                    const format = formatSelect.value;
+                    
+                    // Set canvas dimensions to match scaled image
+                    previewCanvas.width = Math.max(1, Math.floor(originalImage.width * scale));
+                    previewCanvas.height = Math.max(1, Math.floor(originalImage.height * scale));
+
+                    // Draw image to canvas
+                    ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                    
+                    // Fill background for transparent images converted to JPEG
+                    if (format === 'image/jpeg') {
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+                    }
+                    
+                    ctx.drawImage(originalImage, 0, 0, previewCanvas.width, previewCanvas.height);
+
+                    // Note: PNG compression via canvas toBlob ignores the quality parameter.
+                    // It will always be a lossless conversion.
+                    previewCanvas.toBlob((blob) => {
+                        if (blob) {
+                            currentBlob = blob;
+                            updateStats(blob.size);
+                        } else {
+                            showToast("Compression failed.", true);
+                        }
+                        
+                        isCompressing = false;
+                        loadingOverlay.classList.add('hidden');
+                    }, format, quality);
+                }, 50);
+            }
+
+            qualitySlider.addEventListener('input', (e) => {
+                qualityValue.textContent = Math.round(e.target.value * 100) + '%';
+                
+                // Debounce compression to avoid freezing UI while dragging slider
+                clearTimeout(compressionTimeout);
+                compressionTimeout = setTimeout(() => {
+                    compressImage();
+                }, 200);
+            });
+
+            scaleSlider.addEventListener('input', (e) => {
+                scaleValue.textContent = e.target.value + '%';
+                
+                clearTimeout(compressionTimeout);
+                compressionTimeout = setTimeout(() => {
+                    compressImage();
+                }, 200);
+            });
+
+            formatSelect.addEventListener('change', () => {
+                // If PNG is selected, quality doesn't apply, but we still trigger re-render
+                if (formatSelect.value === 'image/png') {
+                    qualitySlider.disabled = true;
+                    qualitySlider.parentElement.style.opacity = '0.5';
+                } else {
+                    qualitySlider.disabled = false;
+                    qualitySlider.parentElement.style.opacity = '1';
+                }
+                compressImage();
+            });
+
+            downloadBtn.addEventListener('click', () => {
+                if (!currentBlob) return;
+
+                const url = URL.createObjectURL(currentBlob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                
+                // Determine extension
+                let ext = 'jpg';
+                if (formatSelect.value === 'image/png') ext = 'png';
+                if (formatSelect.value === 'image/webp') ext = 'webp';
+
+                // Create new filename
+                const originalName = originalFile.name.replace(/\.[^/.]+$/, ""); // remove extension
+                a.download = `${originalName}_compressed.${ext}`;
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showToast("Image downloaded successfully!");
+            });
+
+            resetBtn.addEventListener('click', () => {
+                originalImage = null;
+                originalFile = null;
+                currentBlob = null;
+                fileInput.value = '';
+                
+                workspaceSection.classList.add('hidden');
+                workspaceSection.classList.remove('flex');
+                uploadSection.classList.remove('hidden');
+            });
+
+            function updateStats(newSize) {
+                newSizeDisplay.textContent = formatBytes(newSize);
+                
+                if (originalFile) {
+                    const reduction = ((originalFile.size - newSize) / originalFile.size) * 100;
+                    
+                    if (reduction > 0) {
+                        reductionDisplay.textContent = `-${reduction.toFixed(1)}%`;
+                        reductionDisplay.className = "font-medium text-green-600";
+                        newSizeDisplay.className = "font-bold text-green-600";
+                    } else {
+                        // Sometimes compression makes it bigger (e.g., converting tiny JPG to PNG)
+                        reductionDisplay.textContent = `+${Math.abs(reduction).toFixed(1)}%`;
+                        reductionDisplay.className = "font-medium text-red-500";
+                        newSizeDisplay.className = "font-bold text-red-500";
+                    }
+                }
+            }
+
+            function formatBytes(bytes, decimals = 2) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+            }
+
+            function showToast(message, isError = false) {
+                toastMessage.textContent = message;
+                if (isError) {
+                    toast.classList.remove('bg-gray-800');
+                    toast.classList.add('bg-red-600');
+                } else {
+                    toast.classList.remove('bg-red-600');
+                    toast.classList.add('bg-gray-800');
+                }
+                
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                
+                setTimeout(() => {
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
